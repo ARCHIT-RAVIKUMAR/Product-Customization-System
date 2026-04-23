@@ -15,14 +15,15 @@
   .card h3 { font-size: 11px; color: #999; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
   .card h2 { font-size: 20px; margin-bottom: 15px; }
   select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 15px; }
-  .upload-btn { display: block; width: 100%; padding: 12px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px; text-align: center; cursor: pointer; font-size: 14px; color: #666; margin-bottom: 10px; }
+  .upload-btn { display: block; width: 100%; padding: 12px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px; text-align: center; cursor: pointer; font-size: 14px; color: #666; margin-bottom: 15px; }
   .upload-btn:hover { background: #e8e8e8; }
   canvas { width: 100%; border-radius: 8px; border: 1px solid #eee; }
-  .preview-img { width: 100%; border-radius: 8px; }
   .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 500; background: #f0f0f0; margin-bottom: 10px; margin-right: 5px; }
   .render-btn { width: 100%; padding: 12px; background: #222; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 10px; }
   .render-btn:hover { background: #444; }
   label { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
+  .slider-row { margin-bottom: 15px; }
+  .slider-row input { width: 100%; }
 </style>
 </head>
 <body>
@@ -38,7 +39,7 @@
 </div>
 
 <div class="main">
-  <!-- LEFT: Controls -->
+  <!-- LEFT -->
   <div class="card">
     <h3>Customizer</h3>
     <h2>Choose your product</h2>
@@ -56,33 +57,36 @@
       <option value="back">Back View</option>
     </select>
 
-    <br>
     <label class="upload-btn" for="design-upload">
       ⬆ Upload your design
       <input type="file" id="design-upload" accept="image/*" style="display:none" onchange="loadDesign(this)">
     </label>
 
-    <label>Opacity</label>
-    <input type="range" min="40" max="100" value="88" style="width:100%;margin-bottom:15px" oninput="redraw()">
+    <div class="slider-row">
+      <label>Opacity: <span id="opacity-val">88%</span></label>
+      <input type="range" min="40" max="100" value="88" id="opacity-slider" oninput="updateSliders();redraw()">
+    </div>
 
-    <label>Blend strength</label>
-    <input type="range" min="0" max="100" value="50" style="width:100%;margin-bottom:15px" oninput="redraw()">
+    <div class="slider-row">
+      <label>Blend strength: <span id="blend-val">50%</span></label>
+      <input type="range" min="0" max="100" value="50" id="blend-slider" oninput="updateSliders();redraw()">
+    </div>
   </div>
 
-  <!-- MIDDLE: Canvas -->
+  <!-- MIDDLE -->
   <div class="card">
     <h3>Realtime Placement Editor</h3>
     <h2>Edit design and print area on the canvas</h2>
     <canvas id="canvas" height="500"></canvas>
   </div>
 
-  <!-- RIGHT: Output -->
+  <!-- RIGHT -->
   <div class="card">
     <h3>Output</h3>
     <h2>Preview & Render</h2>
     <p style="font-size:13px;color:#666;margin-bottom:15px">Layer Preview (Product + Design)</p>
     <canvas id="preview" height="300"></canvas>
-    <button class="render-btn" onclick="renderFinal()">Render final image</button>
+    <button class="render-btn" onclick="renderFinal()">⬇ Render & download image</button>
   </div>
 </div>
 
@@ -90,17 +94,17 @@
 const PRODUCTS = {
   hoodie: {
     views: ['front','back'],
-    front: { color:'#1a1a1a', px:148, py:110, pw:200, ph:190 },
-    back:  { color:'#1a1a1a', px:140, py:85,  pw:215, ph:200 },
+    front: { color:'#1a1a1a', px:148, py:160, pw:200, ph:180 },
+    back:  { color:'#1a1a1a', px:140, py:130, pw:215, ph:190 },
   },
   cap: {
     views: ['front','back'],
-    front: { color:'#c8bfa8', px:148, py:148, pw:200, ph:110 },
-    back:  { color:'#111',    px:155, py:220, pw:190, ph:72  },
+    front: { color:'#c8bfa8', px:148, py:165, pw:200, ph:100 },
+    back:  { color:'#111',    px:160, py:230, pw:175, ph:55  },
   },
   tshirt: {
     views: ['front'],
-    front: { color:'#2d6b3c', px:158, py:100, pw:184, ph:160 },
+    front: { color:'#2d6b3c', px:158, py:115, pw:184, ph:160 },
   },
 };
 
@@ -112,15 +116,21 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const preview = document.getElementById('preview');
 const pctx = preview.getContext('2d');
-
 canvas.width = 500;
-preview.width = 280;
+preview.width = 260;
+
+function updateSliders() {
+  document.getElementById('opacity-val').textContent = document.getElementById('opacity-slider').value + '%';
+  document.getElementById('blend-val').textContent = document.getElementById('blend-slider').value + '%';
+}
 
 function changeProduct() {
   currentProduct = document.getElementById('product-select').value;
   const views = PRODUCTS[currentProduct].views;
   const viewSel = document.getElementById('view-select');
-  viewSel.innerHTML = views.map(v => `<option value="${v}">${v.charAt(0).toUpperCase()+v.slice(1)} View</option>`).join('');
+  viewSel.innerHTML = views.map(v =>
+    `<option value="${v}">${v.charAt(0).toUpperCase()+v.slice(1)} View</option>`
+  ).join('');
   currentView = views[0];
   redraw();
 }
@@ -131,80 +141,124 @@ function changeView() {
 }
 
 function loadDesign(inp) {
-  const f = inp.files[0]; if(!f) return;
+  const f = inp.files[0];
+  if(!f) return;
   const img = new Image();
   img.onload = () => { designImg = img; redraw(); };
   img.src = URL.createObjectURL(f);
 }
 
 function drawProductShape(c, cfg, W, H) {
-  c.fillStyle = '#f5f5f5';
+  c.clearRect(0,0,W,H);
+  c.fillStyle = '#f0f0f0';
   c.fillRect(0,0,W,H);
   c.fillStyle = cfg.color;
 
   if(currentProduct === 'hoodie') {
+    // Body
     c.beginPath(); c.roundRect(110,140,280,230,4); c.fill();
+    // Left arm
     c.beginPath(); c.moveTo(110,140); c.lineTo(50,170); c.lineTo(45,310); c.lineTo(110,310); c.fill();
+    // Right arm
     c.beginPath(); c.moveTo(390,140); c.lineTo(450,170); c.lineTo(455,310); c.lineTo(390,310); c.fill();
+    // Hood
     c.beginPath(); c.moveTo(185,140); c.bezierCurveTo(185,80,315,80,315,140); c.fill();
+    // Pocket line
+    c.strokeStyle='rgba(255,255,255,0.1)'; c.lineWidth=1.5;
+    c.strokeRect(148,265,200,95);
+    // Fabric lines
+    c.strokeStyle='rgba(255,255,255,0.04)'; c.lineWidth=1;
+    for(let y=150;y<370;y+=10){
+      c.beginPath(); c.moveTo(80,y); c.lineTo(420,y+Math.sin(y/30)*2); c.stroke();
+    }
   } else if(currentProduct === 'cap') {
     if(currentView === 'front') {
       c.fillStyle = '#b8b0a0';
       c.beginPath(); c.ellipse(250,295,175,45,0,0,Math.PI); c.fill();
       c.fillStyle = cfg.color;
       c.beginPath(); c.moveTo(95,270); c.bezierCurveTo(95,110,405,110,405,270); c.lineTo(95,270); c.fill();
+      c.strokeStyle='rgba(0,0,0,0.12)'; c.lineWidth=1.5;
+      c.beginPath(); c.moveTo(250,118); c.bezierCurveTo(220,118,95,185,95,270); c.stroke();
+      c.beginPath(); c.moveTo(250,118); c.bezierCurveTo(280,118,405,185,405,270); c.stroke();
+      c.fillStyle='rgba(0,0,0,0.25)';
+      c.beginPath(); c.arc(250,126,4,0,Math.PI*2); c.fill();
     } else {
-      c.beginPath(); c.moveTo(95,230); c.bezierCurveTo(95,110,405,110,405,230); c.lineTo(405,290); c.lineTo(95,290); c.fill();
-      c.fillStyle='#333'; c.fillRect(125,250,250,50);
+      c.beginPath(); c.moveTo(95,230); c.bezierCurveTo(95,110,405,110,405,230); c.lineTo(405,290); c.lineTo(95,290); c.closePath(); c.fill();
+      c.fillStyle='#2a2a2a'; c.fillRect(125,248,250,52);
+      c.fillStyle='#111'; c.fillRect(165,253,170,42);
+      c.fillStyle='#3a3a3a';
+      for(let i=0;i<5;i++){ c.beginPath(); c.arc(188+i*26,275,3,0,Math.PI*2); c.fill(); }
     }
   } else {
+    // T-shirt body
     c.beginPath(); c.roundRect(130,90,240,260,4); c.fill();
+    // Left arm
     c.beginPath(); c.moveTo(130,90); c.lineTo(65,110); c.lineTo(55,200); c.lineTo(130,200); c.fill();
+    // Right arm
     c.beginPath(); c.moveTo(370,90); c.lineTo(435,110); c.lineTo(445,200); c.lineTo(370,200); c.fill();
+    // Collar
+    c.fillStyle='rgba(0,0,0,0.2)';
+    c.beginPath(); c.ellipse(250,90,55,22,0,0,Math.PI); c.fill();
+    // Fabric lines
+    c.strokeStyle='rgba(0,0,0,0.04)'; c.lineWidth=1;
+    for(let y=100;y<350;y+=9){
+      c.beginPath(); c.moveTo(100,y); c.lineTo(400,y+Math.sin(y/25)*1.5); c.stroke();
+    }
   }
 }
 
 function redraw() {
   const cfg = PRODUCTS[currentProduct][currentView];
-  const opacity = document.querySelectorAll('input[type=range]')[0].value / 100;
+  const opacity = document.getElementById('opacity-slider').value / 100;
+  const blend = document.getElementById('blend-slider').value / 100;
   const W = 500, H = 500;
 
   drawProductShape(ctx, cfg, W, H);
 
-  // Draw design in print area
+  // Draw design
+  ctx.save();
+  ctx.globalAlpha = opacity;
   if(designImg) {
-    ctx.save();
-    ctx.globalAlpha = opacity;
     ctx.drawImage(designImg, cfg.px, cfg.py, cfg.pw, cfg.ph);
-    ctx.restore();
   } else {
-    ctx.save();
-    ctx.globalAlpha = opacity;
     ctx.fillStyle = '#3B7DD8';
     ctx.fillRect(cfg.px, cfg.py, cfg.pw, cfg.ph);
     ctx.fillStyle = 'white';
     ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('YOUR DESIGN', cfg.px + cfg.pw/2, cfg.py + cfg.ph/2);
-    ctx.restore();
+    ctx.fillText('YOUR DESIGN', cfg.px + cfg.pw/2, cfg.py + cfg.ph/2 - 8);
+    ctx.font = '12px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('Upload image above', cfg.px + cfg.pw/2, cfg.py + cfg.ph/2 + 14);
   }
+  ctx.restore();
 
-  // Print area border
-  ctx.strokeStyle = 'rgba(255,0,0,0.6)';
-  ctx.lineWidth = 2;
+  // Shadow blend overlay
+  ctx.save();
+  ctx.globalAlpha = blend * 0.25;
+  ctx.fillStyle = 'rgba(0,0,0,1)';
+  for(let i=0;i<5;i++){
+    const fy = cfg.py + (i/(4)) * cfg.ph;
+    ctx.fillRect(cfg.px, fy-1, cfg.pw, 2.5);
+  }
+  ctx.restore();
+
+  // Red dashed print area border
+  ctx.strokeStyle = 'rgba(220,50,50,0.7)';
+  ctx.lineWidth = 1.5;
   ctx.setLineDash([6,4]);
   ctx.strokeRect(cfg.px, cfg.py, cfg.pw, cfg.ph);
   ctx.setLineDash([]);
 
   // Update preview
-  pctx.clearRect(0,0,280,300);
-  pctx.drawImage(canvas, 0, 0, 500, 500, 0, 0, 280, 300);
+  pctx.clearRect(0,0,260,300);
+  pctx.drawImage(canvas, 0, 0, 500, 500, 0, 0, 260, 280);
 }
 
 function renderFinal() {
   const link = document.createElement('a');
   link.download = 'customized-product.png';
-  link.href = canvas.toDataURL();
+  link.href = canvas.toDataURL('image/png');
   link.click();
 }
 
