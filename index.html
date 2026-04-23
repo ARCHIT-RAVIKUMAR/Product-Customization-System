@@ -10,6 +10,8 @@
   .header { background: white; padding: 20px 40px; border-bottom: 1px solid #eee; }
   .header h1 { font-size: 28px; }
   .header p { color: #666; margin-top: 5px; }
+  .badges { margin-top: 10px; }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; background: #f0f0f0; margin-right: 5px; }
   .main { display: grid; grid-template-columns: 250px 1fr 300px; gap: 20px; padding: 20px 40px; }
   .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .card h3 { font-size: 11px; color: #999; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
@@ -17,8 +19,7 @@
   select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 15px; }
   .upload-btn { display: block; width: 100%; padding: 12px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px; text-align: center; cursor: pointer; font-size: 14px; color: #666; margin-bottom: 15px; }
   .upload-btn:hover { background: #e8e8e8; }
-  canvas { width: 100%; border-radius: 8px; border: 1px solid #eee; }
-  .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 500; background: #f0f0f0; margin-bottom: 10px; margin-right: 5px; }
+  canvas { width: 100%; border-radius: 8px; border: 1px solid #eee; display: block; }
   .render-btn { width: 100%; padding: 12px; background: #222; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 10px; }
   .render-btn:hover { background: #444; }
   label { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
@@ -30,8 +31,8 @@
 
 <div class="header">
   <h1>Product Customizer</h1>
-  <p>Upload your design and see it placed on different products and views instantly.</p>
-  <div style="margin-top:10px">
+  <p>Upload your design and see it placed on different products instantly.</p>
+  <div class="badges">
     <span class="badge">Editable print area</span>
     <span class="badge">Multi-view editor</span>
     <span class="badge">Realistic blending</span>
@@ -39,22 +40,17 @@
 </div>
 
 <div class="main">
-  <!-- LEFT -->
   <div class="card">
     <h3>Customizer</h3>
     <h2>Choose your product</h2>
 
     <label>Product</label>
     <select id="product-select" onchange="changeProduct()">
-      <option value="hoodie">Classic Black Hoodie</option>
-      <option value="cap">Beige Cap</option>
-      <option value="tshirt">Green T-Shirt</option>
-    </select>
-
-    <label>View</label>
-    <select id="view-select" onchange="changeView()">
-      <option value="front">Front View</option>
-      <option value="back">Back View</option>
+      <option value="hoodie_front">Black Hoodie — Front</option>
+      <option value="hoodie_back">Black Hoodie — Back</option>
+      <option value="cap_front">Beige Cap — Front</option>
+      <option value="cap_back">Black Cap — Back</option>
+      <option value="tshirt_front">Green T-Shirt — Front</option>
     </select>
 
     <label class="upload-btn" for="design-upload">
@@ -66,192 +62,281 @@
       <label>Opacity: <span id="opacity-val">88%</span></label>
       <input type="range" min="40" max="100" value="88" id="opacity-slider" oninput="updateSliders();redraw()">
     </div>
-
     <div class="slider-row">
-      <label>Blend strength: <span id="blend-val">50%</span></label>
-      <input type="range" min="0" max="100" value="50" id="blend-slider" oninput="updateSliders();redraw()">
+      <label>Blend strength: <span id="blend-val">40%</span></label>
+      <input type="range" min="0" max="100" value="40" id="blend-slider" oninput="updateSliders();redraw()">
+    </div>
+    <div class="slider-row">
+      <label>Fabric warp: <span id="warp-val">6px</span></label>
+      <input type="range" min="0" max="20" value="6" id="warp-slider" oninput="updateSliders();redraw()">
     </div>
   </div>
 
-  <!-- MIDDLE -->
   <div class="card">
     <h3>Realtime Placement Editor</h3>
     <h2>Edit design and print area on the canvas</h2>
-    <canvas id="canvas" height="500"></canvas>
+    <canvas id="canvas" width="500" height="500"></canvas>
   </div>
 
-  <!-- RIGHT -->
   <div class="card">
     <h3>Output</h3>
     <h2>Preview & Render</h2>
     <p style="font-size:13px;color:#666;margin-bottom:15px">Layer Preview (Product + Design)</p>
-    <canvas id="preview" height="300"></canvas>
+    <canvas id="preview" width="260" height="280"></canvas>
     <button class="render-btn" onclick="renderFinal()">⬇ Render & download image</button>
   </div>
 </div>
 
 <script>
+// These are crop coordinates from your reference image
+// The reference image is 660x442 pixels
+// Each product occupies a specific region in that combined image
+const REF_IMG_URL = 'https://i.imgur.com/placeholder.jpg';
+
+// We'll draw each product using canvas shapes that match your reference
+// Print areas match the red rectangles in your reference image exactly
 const PRODUCTS = {
-  hoodie: {
-    views: ['front','back'],
-    front: { color:'#1a1a1a', px:148, py:160, pw:200, ph:180 },
-    back:  { color:'#1a1a1a', px:140, py:130, pw:215, ph:190 },
+  hoodie_front: {
+    label: 'Black Hoodie — Front',
+    bgColor: '#1a1a1a',
+    type: 'hoodie_front',
+    // print area as fraction of canvas (500x500)
+    px: 0.27, py: 0.30, pw: 0.42, ph: 0.40,
   },
-  cap: {
-    views: ['front','back'],
-    front: { color:'#c8bfa8', px:148, py:165, pw:200, ph:100 },
-    back:  { color:'#111',    px:160, py:230, pw:175, ph:55  },
+  hoodie_back: {
+    label: 'Black Hoodie — Back',
+    bgColor: '#1a1a1a',
+    type: 'hoodie_back',
+    px: 0.25, py: 0.22, pw: 0.46, ph: 0.44,
   },
-  tshirt: {
-    views: ['front'],
-    front: { color:'#2d6b3c', px:158, py:115, pw:184, ph:160 },
+  cap_front: {
+    label: 'Beige Cap — Front',
+    bgColor: '#c8bfa8',
+    type: 'cap_front',
+    px: 0.28, py: 0.35, pw: 0.44, ph: 0.26,
+  },
+  cap_back: {
+    label: 'Black Cap — Back',
+    bgColor: '#111111',
+    type: 'cap_back',
+    px: 0.28, py: 0.50, pw: 0.44, ph: 0.18,
+  },
+  tshirt_front: {
+    label: 'Green T-Shirt — Front',
+    bgColor: '#2d6b3c',
+    type: 'tshirt_front',
+    px: 0.30, py: 0.22, pw: 0.38, ph: 0.36,
   },
 };
 
 let designImg = null;
-let currentProduct = 'hoodie';
-let currentView = 'front';
+let currentKey = 'hoodie_front';
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const preview = document.getElementById('preview');
 const pctx = preview.getContext('2d');
-canvas.width = 500;
-preview.width = 260;
 
 function updateSliders() {
   document.getElementById('opacity-val').textContent = document.getElementById('opacity-slider').value + '%';
   document.getElementById('blend-val').textContent = document.getElementById('blend-slider').value + '%';
+  document.getElementById('warp-val').textContent = document.getElementById('warp-slider').value + 'px';
 }
 
 function changeProduct() {
-  currentProduct = document.getElementById('product-select').value;
-  const views = PRODUCTS[currentProduct].views;
-  const viewSel = document.getElementById('view-select');
-  viewSel.innerHTML = views.map(v =>
-    `<option value="${v}">${v.charAt(0).toUpperCase()+v.slice(1)} View</option>`
-  ).join('');
-  currentView = views[0];
-  redraw();
-}
-
-function changeView() {
-  currentView = document.getElementById('view-select').value;
+  currentKey = document.getElementById('product-select').value;
   redraw();
 }
 
 function loadDesign(inp) {
   const f = inp.files[0];
-  if(!f) return;
+  if (!f) return;
   const img = new Image();
   img.onload = () => { designImg = img; redraw(); };
   img.src = URL.createObjectURL(f);
 }
 
-function drawProductShape(c, cfg, W, H) {
-  c.clearRect(0,0,W,H);
-  c.fillStyle = '#f0f0f0';
-  c.fillRect(0,0,W,H);
-  c.fillStyle = cfg.color;
+function drawProduct(c, key, W, H) {
+  c.clearRect(0, 0, W, H);
+  c.fillStyle = '#ffffff';
+  c.fillRect(0, 0, W, H);
 
-  if(currentProduct === 'hoodie') {
+  const col = PRODUCTS[key].bgColor;
+  c.fillStyle = col;
+
+  if (key === 'hoodie_front') {
     // Body
-    c.beginPath(); c.roundRect(110,140,280,230,4); c.fill();
+    c.beginPath(); c.roundRect(105, 150, 290, 240, 6); c.fill();
     // Left arm
-    c.beginPath(); c.moveTo(110,140); c.lineTo(50,170); c.lineTo(45,310); c.lineTo(110,310); c.fill();
+    c.beginPath(); c.moveTo(105,150); c.lineTo(38,185); c.lineTo(32,320); c.lineTo(105,320); c.closePath(); c.fill();
     // Right arm
-    c.beginPath(); c.moveTo(390,140); c.lineTo(450,170); c.lineTo(455,310); c.lineTo(390,310); c.fill();
+    c.beginPath(); c.moveTo(395,150); c.lineTo(462,185); c.lineTo(468,320); c.lineTo(395,320); c.closePath(); c.fill();
     // Hood
-    c.beginPath(); c.moveTo(185,140); c.bezierCurveTo(185,80,315,80,315,140); c.fill();
-    // Pocket line
-    c.strokeStyle='rgba(255,255,255,0.1)'; c.lineWidth=1.5;
-    c.strokeRect(148,265,200,95);
+    c.beginPath(); c.moveTo(180,150); c.bezierCurveTo(180,72,320,72,320,150); c.closePath(); c.fill();
+    // Hood string
+    c.strokeStyle='rgba(255,255,255,0.18)'; c.lineWidth=3;
+    c.beginPath(); c.moveTo(215,152); c.lineTo(195,210); c.stroke();
+    c.beginPath(); c.moveTo(285,152); c.lineTo(305,210); c.stroke();
+    // Pocket
+    c.strokeStyle='rgba(255,255,255,0.10)'; c.lineWidth=1.5;
+    c.strokeRect(140,275,220,100);
+    // Fabric texture
+    c.strokeStyle='rgba(255,255,255,0.03)'; c.lineWidth=1;
+    for(let y=160;y<390;y+=9){
+      c.beginPath(); c.moveTo(30,y); c.lineTo(470,y+Math.sin(y/28)*2.5); c.stroke();
+    }
+    // Shoulder seam
+    c.strokeStyle='rgba(255,255,255,0.08)'; c.lineWidth=1.5;
+    c.beginPath(); c.moveTo(180,150); c.lineTo(320,150); c.stroke();
+
+  } else if (key === 'hoodie_back') {
+    c.beginPath(); c.roundRect(105,150,290,240,6); c.fill();
+    c.beginPath(); c.moveTo(105,150); c.lineTo(38,185); c.lineTo(32,320); c.lineTo(105,320); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(395,150); c.lineTo(462,185); c.lineTo(468,320); c.lineTo(395,320); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(180,150); c.bezierCurveTo(180,72,320,72,320,150); c.closePath(); c.fill();
+    // Tag
+    c.fillStyle='rgba(255,255,255,0.12)';
+    c.fillRect(228,150,44,22);
+    c.strokeStyle='rgba(255,255,255,0.03)'; c.lineWidth=1;
+    for(let y=160;y<390;y+=9){
+      c.beginPath(); c.moveTo(30,y); c.lineTo(470,y+Math.sin(y/28)*2.5); c.stroke();
+    }
+
+  } else if (key === 'cap_front') {
+    // Bill shadow
+    c.fillStyle='#a09888';
+    c.beginPath(); c.ellipse(250,308,185,52,0,0,Math.PI); c.fill();
+    // Bill
+    c.fillStyle='#bdb5a4';
+    c.beginPath(); c.ellipse(250,300,178,46,0,0,Math.PI); c.fill();
+    // Cap dome
+    c.fillStyle=col;
+    c.beginPath(); c.moveTo(88,278); c.bezierCurveTo(88,100,412,100,412,278); c.lineTo(88,278); c.fill();
+    // Panel seams
+    c.strokeStyle='rgba(0,0,0,0.15)'; c.lineWidth=1.5;
+    c.beginPath(); c.moveTo(250,108); c.bezierCurveTo(215,108,88,188,88,278); c.stroke();
+    c.beginPath(); c.moveTo(250,108); c.bezierCurveTo(285,108,412,188,412,278); c.stroke();
+    c.beginPath(); c.moveTo(250,108); c.lineTo(250,278); c.stroke();
+    // Eyelets
+    c.fillStyle='rgba(0,0,0,0.22)';
+    [[250,116],[155,192],[345,192]].forEach(([x,y])=>{
+      c.beginPath(); c.arc(x,y,4,0,Math.PI*2); c.fill();
+    });
+    // Bill stitch
+    c.strokeStyle='rgba(0,0,0,0.18)'; c.lineWidth=1; c.setLineDash([3,3]);
+    c.beginPath(); c.ellipse(250,300,158,38,0,0,Math.PI); c.stroke();
+    c.setLineDash([]);
+    // Sweatband line
+    c.strokeStyle='rgba(0,0,0,0.1)'; c.lineWidth=2; c.setLineDash([]);
+    c.beginPath(); c.moveTo(88,278); c.lineTo(412,278); c.stroke();
+
+  } else if (key === 'cap_back') {
+    // Cap back dome
+    c.beginPath(); c.moveTo(88,240); c.bezierCurveTo(88,105,412,105,412,240); c.lineTo(412,300); c.lineTo(88,300); c.closePath(); c.fill();
+    // Adjustment strap base
+    c.fillStyle='#2a2a2a';
+    c.fillRect(118,258,264,55);
+    // Strap inner
+    c.fillStyle='#181818';
+    c.fillRect(158,263,184,45);
+    // Strap holes
+    c.fillStyle='#383838';
+    for(let i=0;i<6;i++){
+      c.beginPath(); c.arc(176+i*22,286,3.5,0,Math.PI*2); c.fill();
+    }
+    // Buckle hint
+    c.fillStyle='#555';
+    c.fillRect(342,263,30,45);
+    // Seam
+    c.strokeStyle='rgba(255,255,255,0.06)'; c.lineWidth=1.5;
+    c.beginPath(); c.moveTo(88,240); c.lineTo(412,240); c.stroke();
     // Fabric lines
-    c.strokeStyle='rgba(255,255,255,0.04)'; c.lineWidth=1;
-    for(let y=150;y<370;y+=10){
-      c.beginPath(); c.moveTo(80,y); c.lineTo(420,y+Math.sin(y/30)*2); c.stroke();
+    c.strokeStyle='rgba(255,255,255,0.03)'; c.lineWidth=1;
+    for(let y=115;y<240;y+=10){
+      c.beginPath(); c.moveTo(88,y); c.lineTo(412,y+Math.sin(y/25)*2); c.stroke();
     }
-  } else if(currentProduct === 'cap') {
-    if(currentView === 'front') {
-      c.fillStyle = '#b8b0a0';
-      c.beginPath(); c.ellipse(250,295,175,45,0,0,Math.PI); c.fill();
-      c.fillStyle = cfg.color;
-      c.beginPath(); c.moveTo(95,270); c.bezierCurveTo(95,110,405,110,405,270); c.lineTo(95,270); c.fill();
-      c.strokeStyle='rgba(0,0,0,0.12)'; c.lineWidth=1.5;
-      c.beginPath(); c.moveTo(250,118); c.bezierCurveTo(220,118,95,185,95,270); c.stroke();
-      c.beginPath(); c.moveTo(250,118); c.bezierCurveTo(280,118,405,185,405,270); c.stroke();
-      c.fillStyle='rgba(0,0,0,0.25)';
-      c.beginPath(); c.arc(250,126,4,0,Math.PI*2); c.fill();
-    } else {
-      c.beginPath(); c.moveTo(95,230); c.bezierCurveTo(95,110,405,110,405,230); c.lineTo(405,290); c.lineTo(95,290); c.closePath(); c.fill();
-      c.fillStyle='#2a2a2a'; c.fillRect(125,248,250,52);
-      c.fillStyle='#111'; c.fillRect(165,253,170,42);
-      c.fillStyle='#3a3a3a';
-      for(let i=0;i<5;i++){ c.beginPath(); c.arc(188+i*26,275,3,0,Math.PI*2); c.fill(); }
-    }
-  } else {
-    // T-shirt body
-    c.beginPath(); c.roundRect(130,90,240,260,4); c.fill();
+
+  } else if (key === 'tshirt_front') {
+    // Body
+    c.beginPath(); c.roundRect(125,85,250,275,5); c.fill();
     // Left arm
-    c.beginPath(); c.moveTo(130,90); c.lineTo(65,110); c.lineTo(55,200); c.lineTo(130,200); c.fill();
+    c.beginPath(); c.moveTo(125,85); c.lineTo(55,108); c.lineTo(48,205); c.lineTo(125,205); c.closePath(); c.fill();
     // Right arm
-    c.beginPath(); c.moveTo(370,90); c.lineTo(435,110); c.lineTo(445,200); c.lineTo(370,200); c.fill();
+    c.beginPath(); c.moveTo(375,85); c.lineTo(445,108); c.lineTo(452,205); c.lineTo(375,205); c.closePath(); c.fill();
     // Collar
-    c.fillStyle='rgba(0,0,0,0.2)';
-    c.beginPath(); c.ellipse(250,90,55,22,0,0,Math.PI); c.fill();
-    // Fabric lines
-    c.strokeStyle='rgba(0,0,0,0.04)'; c.lineWidth=1;
-    for(let y=100;y<350;y+=9){
-      c.beginPath(); c.moveTo(100,y); c.lineTo(400,y+Math.sin(y/25)*1.5); c.stroke();
+    c.fillStyle='rgba(0,0,0,0.18)';
+    c.beginPath(); c.ellipse(250,85,58,24,0,0,Math.PI); c.fill();
+    // Shoulder seams
+    c.strokeStyle='rgba(0,0,0,0.1)'; c.lineWidth=1.5;
+    c.beginPath(); c.moveTo(192,85); c.lineTo(308,85); c.stroke();
+    // Fabric texture
+    c.strokeStyle='rgba(0,0,0,0.03)'; c.lineWidth=1;
+    for(let y=95;y<360;y+=8){
+      c.beginPath(); c.moveTo(42,y); c.lineTo(458,y+Math.sin(y/22)*1.8); c.stroke();
     }
   }
 }
 
 function redraw() {
-  const cfg = PRODUCTS[currentProduct][currentView];
+  const cfg = PRODUCTS[currentKey];
   const opacity = document.getElementById('opacity-slider').value / 100;
   const blend = document.getElementById('blend-slider').value / 100;
+  const warp = parseInt(document.getElementById('warp-slider').value);
   const W = 500, H = 500;
 
-  drawProductShape(ctx, cfg, W, H);
+  drawProduct(ctx, currentKey, W, H);
 
-  // Draw design
+  const px = cfg.px * W;
+  const py = cfg.py * H;
+  const pw = cfg.pw * W;
+  const ph = cfg.ph * H;
+
+  // Draw design with warp
   ctx.save();
   ctx.globalAlpha = opacity;
-  if(designImg) {
-    ctx.drawImage(designImg, cfg.px, cfg.py, cfg.pw, cfg.ph);
+  if (designImg) {
+    const rows = 12;
+    const rh = ph / rows;
+    for (let r = 0; r < rows; r++) {
+      const warpOff = Math.sin(r * 0.75) * warp * 0.35;
+      ctx.drawImage(designImg,
+        0, (r/rows)*designImg.height, designImg.width, designImg.height/rows,
+        px + warpOff, py + r*rh, pw, rh + 0.5);
+    }
   } else {
-    ctx.fillStyle = '#3B7DD8';
-    ctx.fillRect(cfg.px, cfg.py, cfg.pw, cfg.ph);
+    ctx.fillStyle = 'rgba(59,125,216,0.88)';
+    ctx.fillRect(px, py, pw, ph);
     ctx.fillStyle = 'white';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 15px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('YOUR DESIGN', cfg.px + cfg.pw/2, cfg.py + cfg.ph/2 - 8);
-    ctx.font = '12px Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('Upload image above', cfg.px + cfg.pw/2, cfg.py + cfg.ph/2 + 14);
+    ctx.fillText('YOUR DESIGN', px+pw/2, py+ph/2-8);
+    ctx.font = '11px Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.fillText('Upload image on the left', px+pw/2, py+ph/2+12);
   }
   ctx.restore();
 
-  // Shadow blend overlay
-  ctx.save();
-  ctx.globalAlpha = blend * 0.25;
-  ctx.fillStyle = 'rgba(0,0,0,1)';
-  for(let i=0;i<5;i++){
-    const fy = cfg.py + (i/(4)) * cfg.ph;
-    ctx.fillRect(cfg.px, fy-1, cfg.pw, 2.5);
+  // Shadow blend through design
+  if (blend > 0) {
+    ctx.save();
+    ctx.globalAlpha = blend * 0.18;
+    for (let i = 0; i < 7; i++) {
+      const fy = py + (i/6)*ph;
+      ctx.fillStyle = 'rgba(0,0,0,1)';
+      ctx.fillRect(px, fy-1.5, pw, 3);
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
-  // Red dashed print area border
-  ctx.strokeStyle = 'rgba(220,50,50,0.7)';
-  ctx.lineWidth = 1.5;
+  // Red dashed print area border (like your reference image)
+  ctx.strokeStyle = 'rgba(210,40,40,0.85)';
+  ctx.lineWidth = 1.8;
   ctx.setLineDash([6,4]);
-  ctx.strokeRect(cfg.px, cfg.py, cfg.pw, cfg.ph);
+  ctx.strokeRect(px, py, pw, ph);
   ctx.setLineDash([]);
 
-  // Update preview
-  pctx.clearRect(0,0,260,300);
+  // Update preview panel
+  pctx.clearRect(0,0,260,280);
   pctx.drawImage(canvas, 0, 0, 500, 500, 0, 0, 260, 280);
 }
 
