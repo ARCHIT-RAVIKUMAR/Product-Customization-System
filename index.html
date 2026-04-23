@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Customization System</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f5f5f5; }
+  .header { background: white; padding: 20px 40px; border-bottom: 1px solid #eee; }
+  .header h1 { font-size: 28px; }
+  .header p { color: #666; margin-top: 5px; }
+  .main { display: grid; grid-template-columns: 250px 1fr 300px; gap: 20px; padding: 20px 40px; }
+  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h3 { font-size: 11px; color: #999; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+  .card h2 { font-size: 20px; margin-bottom: 15px; }
+  select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 15px; }
+  .upload-btn { display: block; width: 100%; padding: 12px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px; text-align: center; cursor: pointer; font-size: 14px; color: #666; margin-bottom: 10px; }
+  .upload-btn:hover { background: #e8e8e8; }
+  canvas { width: 100%; border-radius: 8px; border: 1px solid #eee; }
+  .preview-img { width: 100%; border-radius: 8px; }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 500; background: #f0f0f0; margin-bottom: 10px; margin-right: 5px; }
+  .render-btn { width: 100%; padding: 12px; background: #222; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 10px; }
+  .render-btn:hover { background: #444; }
+  label { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Product Customizer</h1>
+  <p>Upload your design and see it placed on different products and views instantly.</p>
+  <div style="margin-top:10px">
+    <span class="badge">Editable print area</span>
+    <span class="badge">Multi-view editor</span>
+    <span class="badge">Realistic blending</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT: Controls -->
+  <div class="card">
+    <h3>Customizer</h3>
+    <h2>Choose your product</h2>
+
+    <label>Product</label>
+    <select id="product-select" onchange="changeProduct()">
+      <option value="hoodie">Classic Black Hoodie</option>
+      <option value="cap">Beige Cap</option>
+      <option value="tshirt">Green T-Shirt</option>
+    </select>
+
+    <label>View</label>
+    <select id="view-select" onchange="changeView()">
+      <option value="front">Front View</option>
+      <option value="back">Back View</option>
+    </select>
+
+    <br>
+    <label class="upload-btn" for="design-upload">
+      ⬆ Upload your design
+      <input type="file" id="design-upload" accept="image/*" style="display:none" onchange="loadDesign(this)">
+    </label>
+
+    <label>Opacity</label>
+    <input type="range" min="40" max="100" value="88" style="width:100%;margin-bottom:15px" oninput="redraw()">
+
+    <label>Blend strength</label>
+    <input type="range" min="0" max="100" value="50" style="width:100%;margin-bottom:15px" oninput="redraw()">
+  </div>
+
+  <!-- MIDDLE: Canvas -->
+  <div class="card">
+    <h3>Realtime Placement Editor</h3>
+    <h2>Edit design and print area on the canvas</h2>
+    <canvas id="canvas" height="500"></canvas>
+  </div>
+
+  <!-- RIGHT: Output -->
+  <div class="card">
+    <h3>Output</h3>
+    <h2>Preview & Render</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:15px">Layer Preview (Product + Design)</p>
+    <canvas id="preview" height="300"></canvas>
+    <button class="render-btn" onclick="renderFinal()">Render final image</button>
+  </div>
+</div>
+
+<script>
+const PRODUCTS = {
+  hoodie: {
+    views: ['front','back'],
+    front: { color:'#1a1a1a', px:148, py:110, pw:200, ph:190 },
+    back:  { color:'#1a1a1a', px:140, py:85,  pw:215, ph:200 },
+  },
+  cap: {
+    views: ['front','back'],
+    front: { color:'#c8bfa8', px:148, py:148, pw:200, ph:110 },
+    back:  { color:'#111',    px:155, py:220, pw:190, ph:72  },
+  },
+  tshirt: {
+    views: ['front'],
+    front: { color:'#2d6b3c', px:158, py:100, pw:184, ph:160 },
+  },
+};
+
+let designImg = null;
+let currentProduct = 'hoodie';
+let currentView = 'front';
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const preview = document.getElementById('preview');
+const pctx = preview.getContext('2d');
+
+canvas.width = 500;
+preview.width = 280;
+
+function changeProduct() {
+  currentProduct = document.getElementById('product-select').value;
+  const views = PRODUCTS[currentProduct].views;
+  const viewSel = document.getElementById('view-select');
+  viewSel.innerHTML = views.map(v => `<option value="${v}">${v.charAt(0).toUpperCase()+v.slice(1)} View</option>`).join('');
+  currentView = views[0];
+  redraw();
+}
+
+function changeView() {
+  currentView = document.getElementById('view-select').value;
+  redraw();
+}
+
+function loadDesign(inp) {
+  const f = inp.files[0]; if(!f) return;
+  const img = new Image();
+  img.onload = () => { designImg = img; redraw(); };
+  img.src = URL.createObjectURL(f);
+}
+
+function drawProductShape(c, cfg, W, H) {
+  c.fillStyle = '#f5f5f5';
+  c.fillRect(0,0,W,H);
+  c.fillStyle = cfg.color;
+
+  if(currentProduct === 'hoodie') {
+    c.beginPath(); c.roundRect(110,140,280,230,4); c.fill();
+    c.beginPath(); c.moveTo(110,140); c.lineTo(50,170); c.lineTo(45,310); c.lineTo(110,310); c.fill();
+    c.beginPath(); c.moveTo(390,140); c.lineTo(450,170); c.lineTo(455,310); c.lineTo(390,310); c.fill();
+    c.beginPath(); c.moveTo(185,140); c.bezierCurveTo(185,80,315,80,315,140); c.fill();
+  } else if(currentProduct === 'cap') {
+    if(currentView === 'front') {
+      c.fillStyle = '#b8b0a0';
+      c.beginPath(); c.ellipse(250,295,175,45,0,0,Math.PI); c.fill();
+      c.fillStyle = cfg.color;
+      c.beginPath(); c.moveTo(95,270); c.bezierCurveTo(95,110,405,110,405,270); c.lineTo(95,270); c.fill();
+    } else {
+      c.beginPath(); c.moveTo(95,230); c.bezierCurveTo(95,110,405,110,405,230); c.lineTo(405,290); c.lineTo(95,290); c.fill();
+      c.fillStyle='#333'; c.fillRect(125,250,250,50);
+    }
+  } else {
+    c.beginPath(); c.roundRect(130,90,240,260,4); c.fill();
+    c.beginPath(); c.moveTo(130,90); c.lineTo(65,110); c.lineTo(55,200); c.lineTo(130,200); c.fill();
+    c.beginPath(); c.moveTo(370,90); c.lineTo(435,110); c.lineTo(445,200); c.lineTo(370,200); c.fill();
+  }
+}
+
+function redraw() {
+  const cfg = PRODUCTS[currentProduct][currentView];
+  const opacity = document.querySelectorAll('input[type=range]')[0].value / 100;
+  const W = 500, H = 500;
+
+  drawProductShape(ctx, cfg, W, H);
+
+  // Draw design in print area
+  if(designImg) {
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(designImg, cfg.px, cfg.py, cfg.pw, cfg.ph);
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = '#3B7DD8';
+    ctx.fillRect(cfg.px, cfg.py, cfg.pw, cfg.ph);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('YOUR DESIGN', cfg.px + cfg.pw/2, cfg.py + cfg.ph/2);
+    ctx.restore();
+  }
+
+  // Print area border
+  ctx.strokeStyle = 'rgba(255,0,0,0.6)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6,4]);
+  ctx.strokeRect(cfg.px, cfg.py, cfg.pw, cfg.ph);
+  ctx.setLineDash([]);
+
+  // Update preview
+  pctx.clearRect(0,0,280,300);
+  pctx.drawImage(canvas, 0, 0, 500, 500, 0, 0, 280, 300);
+}
+
+function renderFinal() {
+  const link = document.createElement('a');
+  link.download = 'customized-product.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+redraw();
+</script>
+</body>
+</html>
