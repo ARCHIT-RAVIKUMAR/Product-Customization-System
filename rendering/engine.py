@@ -1,6 +1,5 @@
 import io
 import time
-import numpy as np
 from PIL import Image, ImageFilter
 from dataclasses import dataclass
 from typing import Optional
