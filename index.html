@@ -6,348 +6,296 @@
 <title>Product Customization System</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; background: #f5f5f5; }
-  .header { background: white; padding: 20px 40px; border-bottom: 1px solid #eee; }
-  .header h1 { font-size: 28px; }
-  .header p { color: #666; margin-top: 5px; }
-  .badges { margin-top: 10px; }
-  .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; background: #f0f0f0; margin-right: 5px; }
-  .main { display: grid; grid-template-columns: 250px 1fr 300px; gap: 20px; padding: 20px 40px; }
-  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .card h3 { font-size: 11px; color: #999; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
-  .card h2 { font-size: 20px; margin-bottom: 15px; }
-  select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 15px; }
-  .upload-btn { display: block; width: 100%; padding: 12px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px; text-align: center; cursor: pointer; font-size: 14px; color: #666; margin-bottom: 15px; }
-  .upload-btn:hover { background: #e8e8e8; }
-  canvas { width: 100%; border-radius: 8px; border: 1px solid #eee; display: block; }
-  .render-btn { width: 100%; padding: 12px; background: #222; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 10px; }
-  .render-btn:hover { background: #444; }
-  label { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
-  .slider-row { margin-bottom: 15px; }
-  .slider-row input { width: 100%; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; }
+  .header { background: white; padding: 18px 40px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header h1 span { color: #7c3aed; }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; background: #f3f0ff; color: #7c3aed; margin-right: 6px; font-weight: 500; }
+  .main { display: grid; grid-template-columns: 280px 1fr 280px; gap: 20px; padding: 20px 30px; }
+  .card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+  .card-title { font-size: 11px; color: #999; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .card-heading { font-size: 19px; font-weight: 700; margin-bottom: 16px; }
+  select { width: 100%; padding: 10px; border: 1.5px solid #e5e7eb; border-radius: 8px; font-size: 14px; margin-bottom: 14px; background: white; cursor: pointer; }
+  select:focus { outline: none; border-color: #7c3aed; }
+  .upload-zone { border: 2px dashed #d1d5db; border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; background: #fafafa; margin-bottom: 14px; transition: all 0.2s; }
+  .upload-zone:hover { border-color: #7c3aed; background: #f5f3ff; }
+  .slider-row { margin-bottom: 10px; }
+  .slider-label { display: flex; justify-content: space-between; font-size: 12px; color: #666; margin-bottom: 4px; }
+  .slider-label strong { color: #111; }
+  input[type=range] { width: 100%; accent-color: #7c3aed; }
+  .render-btn { width: 100%; padding: 12px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+  .render-btn:hover { background: #6d28d9; }
+  .canvas-wrap { display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 10px; padding: 10px; min-height: 500px; }
+  .preview-wrap { display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 10px; padding: 10px; min-height: 300px; margin-bottom: 14px; }
+  canvas { border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: block; }
+  .product-thumbs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .thumb { border: 2px solid #e5e7eb; border-radius: 8px; padding: 6px; cursor: pointer; text-align: center; transition: all 0.2s; }
+  .thumb:hover { border-color: #7c3aed; }
+  .thumb.active { border-color: #7c3aed; background: #f5f3ff; }
+  .thumb img { width: 100%; height: 60px; object-fit: contain; border-radius: 4px; }
+  .thumb span { font-size: 10px; color: #666; display: block; margin-top: 3px; font-weight: 500; }
+  .section-divider { font-size: 12px; font-weight: 600; color: #444; margin: 12px 0 8px; border-top: 1px solid #eee; padding-top: 10px; }
+  .design-name { font-size: 11px; color: #7c3aed; margin-top: 6px; word-break: break-all; }
+  .view-label { font-size: 12px; font-weight: 600; color: #444; margin-bottom: 6px; display: block; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>Product Customizer</h1>
-  <p>Upload your design and see it placed on different products instantly.</p>
-  <div class="badges">
-    <span class="badge">Editable print area</span>
-    <span class="badge">Multi-view editor</span>
-    <span class="badge">Realistic blending</span>
+  <div>
+    <h1>Product <span>Customizer</span></h1>
+    <div style="margin-top:6px">
+      <span class="badge">Perspective alignment</span>
+      <span class="badge">Fabric conformation</span>
+      <span class="badge">Realistic blending</span>
+    </div>
   </div>
+  <div style="font-size:13px;color:#7c3aed;font-weight:500">Pro Render Engine Active</div>
 </div>
 
 <div class="main">
-  <div class="card">
-    <h3>Customizer</h3>
-    <h2>Choose your product</h2>
 
-    <label>Product</label>
-    <select id="product-select" onchange="changeProduct()">
-      <option value="hoodie_front">Black Hoodie — Front</option>
-      <option value="hoodie_back">Black Hoodie — Back</option>
-      <option value="cap_front">Beige Cap — Front</option>
-      <option value="cap_back">Black Cap — Back</option>
-      <option value="tshirt_front">Green T-Shirt — Front</option>
+  <!-- LEFT PANEL -->
+  <div class="card">
+    <div class="card-title">Customizer</div>
+    <div class="card-heading">Select Product</div>
+
+    <div class="product-thumbs">
+      <div class="thumb active" onclick="selectProduct('hoodie')" id="thumb-hoodie">
+        <img src="/static/hoodie_front.jpg" alt="Hoodie">
+        <span>Hoodie</span>
+      </div>
+      <div class="thumb" onclick="selectProduct('cap')" id="thumb-cap">
+        <img src="/static/cap_front.jpg" alt="Cap">
+        <span>Cap</span>
+      </div>
+      <div class="thumb" onclick="selectProduct('tshirt')" id="thumb-tshirt">
+        <img src="/static/tshirt_front.jpg" alt="T-Shirt">
+        <span>T-Shirt</span>
+      </div>
+    </div>
+
+    <span class="view-label">View</span>
+    <select id="view-select" onchange="changeView()">
+      <option value="front">Front</option>
+      <option value="back">Back</option>
     </select>
 
-    <label class="upload-btn" for="design-upload">
-      ⬆ Upload your design
-      <input type="file" id="design-upload" accept="image/*" style="display:none" onchange="loadDesign(this)">
-    </label>
+    <div class="upload-zone" onclick="document.getElementById('file-in').click()">
+      <div style="font-size:22px">&#8593;</div>
+      <div style="font-weight:600;font-size:14px">Upload your design</div>
+      <div style="font-size:12px;color:#888;margin-top:4px">PNG or JPG</div>
+      <input type="file" id="file-in" accept="image/*" style="display:none" onchange="loadDesign(this)">
+    </div>
+    <div class="design-name" id="design-name"></div>
 
+    <div class="section-divider">Design Controls</div>
     <div class="slider-row">
-      <label>Opacity: <span id="opacity-val">88%</span></label>
-      <input type="range" min="40" max="100" value="88" id="opacity-slider" oninput="updateSliders();redraw()">
+      <div class="slider-label">Size <strong id="v-size">100%</strong></div>
+      <input type="range" min="10" max="150" value="100" id="sl-size" oninput="sync();redraw()">
     </div>
     <div class="slider-row">
-      <label>Blend strength: <span id="blend-val">40%</span></label>
-      <input type="range" min="0" max="100" value="40" id="blend-slider" oninput="updateSliders();redraw()">
+      <div class="slider-label">X Position <strong id="v-x">0</strong></div>
+      <input type="range" min="-150" max="150" value="0" id="sl-x" oninput="sync();redraw()">
     </div>
     <div class="slider-row">
-      <label>Fabric warp: <span id="warp-val">6px</span></label>
-      <input type="range" min="0" max="20" value="6" id="warp-slider" oninput="updateSliders();redraw()">
+      <div class="slider-label">Y Position <strong id="v-y">0</strong></div>
+      <input type="range" min="-150" max="150" value="0" id="sl-y" oninput="sync();redraw()">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label">Rotation <strong id="v-rot">0°</strong></div>
+      <input type="range" min="-180" max="180" value="0" id="sl-rot" oninput="sync();redraw()">
+    </div>
+
+    <div class="section-divider">Render Controls</div>
+    <div class="slider-row">
+      <div class="slider-label">Opacity <strong id="v-op">90%</strong></div>
+      <input type="range" min="10" max="100" value="90" id="sl-op" oninput="sync();redraw()">
     </div>
   </div>
 
+  <!-- MIDDLE PANEL -->
   <div class="card">
-    <h3>Realtime Placement Editor</h3>
-    <h2>Edit design and print area on the canvas</h2>
-    <canvas id="canvas" width="500" height="500"></canvas>
+    <div class="card-title">Realtime Placement Editor</div>
+    <div class="card-heading">Edit design and print area on the canvas</div>
+    <div class="canvas-wrap">
+      <canvas id="main-canvas" width="460" height="500"></canvas>
+    </div>
   </div>
 
+  <!-- RIGHT PANEL -->
   <div class="card">
-    <h3>Output</h3>
-    <h2>Preview & Render</h2>
-    <p style="font-size:13px;color:#666;margin-bottom:15px">Layer Preview (Product + Design)</p>
-    <canvas id="preview" width="260" height="280"></canvas>
-    <button class="render-btn" onclick="renderFinal()">⬇ Render & download image</button>
+    <div class="card-title">Output</div>
+    <div class="card-heading">Preview & Render</div>
+    <p style="font-size:13px;color:#666;margin-bottom:12px">Layer Preview (Product + Design)</p>
+    <div class="preview-wrap">
+      <canvas id="preview-canvas" width="240" height="280"></canvas>
+    </div>
+    <button class="render-btn" onclick="downloadRender()">&#8595; Generate Render</button>
   </div>
+
 </div>
 
 <script>
-// These are crop coordinates from your reference image
-// The reference image is 660x442 pixels
-// Each product occupies a specific region in that combined image
-const REF_IMG_URL = 'https://i.imgur.com/placeholder.jpg';
-
-// We'll draw each product using canvas shapes that match your reference
-// Print areas match the red rectangles in your reference image exactly
-const PRODUCTS = {
-  hoodie_front: {
-    label: 'Black Hoodie — Front',
-    bgColor: '#1a1a1a',
-    type: 'hoodie_front',
-    // print area as fraction of canvas (500x500)
-    px: 0.27, py: 0.30, pw: 0.42, ph: 0.40,
+const PRINT_AREAS = {
+  hoodie: {
+    front: { px:0.33, py:0.30, pw:0.34, ph:0.25 },
+    back:  { px:0.28, py:0.26, pw:0.42, ph:0.34 },
   },
-  hoodie_back: {
-    label: 'Black Hoodie — Back',
-    bgColor: '#1a1a1a',
-    type: 'hoodie_back',
-    px: 0.25, py: 0.22, pw: 0.46, ph: 0.44,
+  cap: {
+    front: { px:0.22, py:0.28, pw:0.54, ph:0.38 },
+    back:  { px:0.25, py:0.18, pw:0.50, ph:0.32 },
   },
-  cap_front: {
-    label: 'Beige Cap — Front',
-    bgColor: '#c8bfa8',
-    type: 'cap_front',
-    px: 0.28, py: 0.35, pw: 0.44, ph: 0.26,
-  },
-  cap_back: {
-    label: 'Black Cap — Back',
-    bgColor: '#111111',
-    type: 'cap_back',
-    px: 0.28, py: 0.50, pw: 0.44, ph: 0.18,
-  },
-  tshirt_front: {
-    label: 'Green T-Shirt — Front',
-    bgColor: '#2d6b3c',
-    type: 'tshirt_front',
-    px: 0.30, py: 0.22, pw: 0.38, ph: 0.36,
+  tshirt: {
+    front: { px:0.30, py:0.26, pw:0.40, ph:0.34 },
+    back:  { px:0.30, py:0.20, pw:0.40, ph:0.38 },
   },
 };
 
+let productImg = new Image();
 let designImg = null;
-let currentKey = 'hoodie_front';
+let currentProduct = 'hoodie';
+let currentView = 'front';
+let imgLoaded = false;
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const preview = document.getElementById('preview');
-const pctx = preview.getContext('2d');
+const mainCanvas = document.getElementById('main-canvas');
+const mctx = mainCanvas.getContext('2d');
+const previewCanvas = document.getElementById('preview-canvas');
+const pctx = previewCanvas.getContext('2d');
 
-function updateSliders() {
-  document.getElementById('opacity-val').textContent = document.getElementById('opacity-slider').value + '%';
-  document.getElementById('blend-val').textContent = document.getElementById('blend-slider').value + '%';
-  document.getElementById('warp-val').textContent = document.getElementById('warp-slider').value + 'px';
+function loadProductImage() {
+  imgLoaded = false;
+  productImg = new Image();
+  productImg.onload = () => { imgLoaded = true; redraw(); };
+  productImg.onerror = () => { imgLoaded = false; redraw(); };
+  productImg.src = '/static/' + currentProduct + '_' + currentView + '.jpg';
 }
 
-function changeProduct() {
-  currentKey = document.getElementById('product-select').value;
-  redraw();
+function selectProduct(product) {
+  currentProduct = product;
+  document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+  document.getElementById('thumb-' + product).classList.add('active');
+  document.getElementById('sl-x').value = 0;
+  document.getElementById('sl-y').value = 0;
+  document.getElementById('sl-size').value = 100;
+  document.getElementById('sl-rot').value = 0;
+  sync();
+  loadProductImage();
+}
+
+function changeView() {
+  currentView = document.getElementById('view-select').value;
+  document.getElementById('sl-x').value = 0;
+  document.getElementById('sl-y').value = 0;
+  sync();
+  loadProductImage();
 }
 
 function loadDesign(inp) {
   const f = inp.files[0];
   if (!f) return;
+  document.getElementById('design-name').textContent = f.name;
   const img = new Image();
   img.onload = () => { designImg = img; redraw(); };
   img.src = URL.createObjectURL(f);
 }
 
-function drawProduct(c, key, W, H) {
-  c.clearRect(0, 0, W, H);
-  c.fillStyle = '#ffffff';
-  c.fillRect(0, 0, W, H);
-
-  const col = PRODUCTS[key].bgColor;
-  c.fillStyle = col;
-
-  if (key === 'hoodie_front') {
-    // Body
-    c.beginPath(); c.roundRect(105, 150, 290, 240, 6); c.fill();
-    // Left arm
-    c.beginPath(); c.moveTo(105,150); c.lineTo(38,185); c.lineTo(32,320); c.lineTo(105,320); c.closePath(); c.fill();
-    // Right arm
-    c.beginPath(); c.moveTo(395,150); c.lineTo(462,185); c.lineTo(468,320); c.lineTo(395,320); c.closePath(); c.fill();
-    // Hood
-    c.beginPath(); c.moveTo(180,150); c.bezierCurveTo(180,72,320,72,320,150); c.closePath(); c.fill();
-    // Hood string
-    c.strokeStyle='rgba(255,255,255,0.18)'; c.lineWidth=3;
-    c.beginPath(); c.moveTo(215,152); c.lineTo(195,210); c.stroke();
-    c.beginPath(); c.moveTo(285,152); c.lineTo(305,210); c.stroke();
-    // Pocket
-    c.strokeStyle='rgba(255,255,255,0.10)'; c.lineWidth=1.5;
-    c.strokeRect(140,275,220,100);
-    // Fabric texture
-    c.strokeStyle='rgba(255,255,255,0.03)'; c.lineWidth=1;
-    for(let y=160;y<390;y+=9){
-      c.beginPath(); c.moveTo(30,y); c.lineTo(470,y+Math.sin(y/28)*2.5); c.stroke();
-    }
-    // Shoulder seam
-    c.strokeStyle='rgba(255,255,255,0.08)'; c.lineWidth=1.5;
-    c.beginPath(); c.moveTo(180,150); c.lineTo(320,150); c.stroke();
-
-  } else if (key === 'hoodie_back') {
-    c.beginPath(); c.roundRect(105,150,290,240,6); c.fill();
-    c.beginPath(); c.moveTo(105,150); c.lineTo(38,185); c.lineTo(32,320); c.lineTo(105,320); c.closePath(); c.fill();
-    c.beginPath(); c.moveTo(395,150); c.lineTo(462,185); c.lineTo(468,320); c.lineTo(395,320); c.closePath(); c.fill();
-    c.beginPath(); c.moveTo(180,150); c.bezierCurveTo(180,72,320,72,320,150); c.closePath(); c.fill();
-    // Tag
-    c.fillStyle='rgba(255,255,255,0.12)';
-    c.fillRect(228,150,44,22);
-    c.strokeStyle='rgba(255,255,255,0.03)'; c.lineWidth=1;
-    for(let y=160;y<390;y+=9){
-      c.beginPath(); c.moveTo(30,y); c.lineTo(470,y+Math.sin(y/28)*2.5); c.stroke();
-    }
-
-  } else if (key === 'cap_front') {
-    // Bill shadow
-    c.fillStyle='#a09888';
-    c.beginPath(); c.ellipse(250,308,185,52,0,0,Math.PI); c.fill();
-    // Bill
-    c.fillStyle='#bdb5a4';
-    c.beginPath(); c.ellipse(250,300,178,46,0,0,Math.PI); c.fill();
-    // Cap dome
-    c.fillStyle=col;
-    c.beginPath(); c.moveTo(88,278); c.bezierCurveTo(88,100,412,100,412,278); c.lineTo(88,278); c.fill();
-    // Panel seams
-    c.strokeStyle='rgba(0,0,0,0.15)'; c.lineWidth=1.5;
-    c.beginPath(); c.moveTo(250,108); c.bezierCurveTo(215,108,88,188,88,278); c.stroke();
-    c.beginPath(); c.moveTo(250,108); c.bezierCurveTo(285,108,412,188,412,278); c.stroke();
-    c.beginPath(); c.moveTo(250,108); c.lineTo(250,278); c.stroke();
-    // Eyelets
-    c.fillStyle='rgba(0,0,0,0.22)';
-    [[250,116],[155,192],[345,192]].forEach(([x,y])=>{
-      c.beginPath(); c.arc(x,y,4,0,Math.PI*2); c.fill();
-    });
-    // Bill stitch
-    c.strokeStyle='rgba(0,0,0,0.18)'; c.lineWidth=1; c.setLineDash([3,3]);
-    c.beginPath(); c.ellipse(250,300,158,38,0,0,Math.PI); c.stroke();
-    c.setLineDash([]);
-    // Sweatband line
-    c.strokeStyle='rgba(0,0,0,0.1)'; c.lineWidth=2; c.setLineDash([]);
-    c.beginPath(); c.moveTo(88,278); c.lineTo(412,278); c.stroke();
-
-  } else if (key === 'cap_back') {
-    // Cap back dome
-    c.beginPath(); c.moveTo(88,240); c.bezierCurveTo(88,105,412,105,412,240); c.lineTo(412,300); c.lineTo(88,300); c.closePath(); c.fill();
-    // Adjustment strap base
-    c.fillStyle='#2a2a2a';
-    c.fillRect(118,258,264,55);
-    // Strap inner
-    c.fillStyle='#181818';
-    c.fillRect(158,263,184,45);
-    // Strap holes
-    c.fillStyle='#383838';
-    for(let i=0;i<6;i++){
-      c.beginPath(); c.arc(176+i*22,286,3.5,0,Math.PI*2); c.fill();
-    }
-    // Buckle hint
-    c.fillStyle='#555';
-    c.fillRect(342,263,30,45);
-    // Seam
-    c.strokeStyle='rgba(255,255,255,0.06)'; c.lineWidth=1.5;
-    c.beginPath(); c.moveTo(88,240); c.lineTo(412,240); c.stroke();
-    // Fabric lines
-    c.strokeStyle='rgba(255,255,255,0.03)'; c.lineWidth=1;
-    for(let y=115;y<240;y+=10){
-      c.beginPath(); c.moveTo(88,y); c.lineTo(412,y+Math.sin(y/25)*2); c.stroke();
-    }
-
-  } else if (key === 'tshirt_front') {
-    // Body
-    c.beginPath(); c.roundRect(125,85,250,275,5); c.fill();
-    // Left arm
-    c.beginPath(); c.moveTo(125,85); c.lineTo(55,108); c.lineTo(48,205); c.lineTo(125,205); c.closePath(); c.fill();
-    // Right arm
-    c.beginPath(); c.moveTo(375,85); c.lineTo(445,108); c.lineTo(452,205); c.lineTo(375,205); c.closePath(); c.fill();
-    // Collar
-    c.fillStyle='rgba(0,0,0,0.18)';
-    c.beginPath(); c.ellipse(250,85,58,24,0,0,Math.PI); c.fill();
-    // Shoulder seams
-    c.strokeStyle='rgba(0,0,0,0.1)'; c.lineWidth=1.5;
-    c.beginPath(); c.moveTo(192,85); c.lineTo(308,85); c.stroke();
-    // Fabric texture
-    c.strokeStyle='rgba(0,0,0,0.03)'; c.lineWidth=1;
-    for(let y=95;y<360;y+=8){
-      c.beginPath(); c.moveTo(42,y); c.lineTo(458,y+Math.sin(y/22)*1.8); c.stroke();
-    }
-  }
+function sync() {
+  document.getElementById('v-size').textContent = document.getElementById('sl-size').value + '%';
+  document.getElementById('v-x').textContent = document.getElementById('sl-x').value;
+  document.getElementById('v-y').textContent = document.getElementById('sl-y').value;
+  document.getElementById('v-rot').textContent = document.getElementById('sl-rot').value + '°';
+  document.getElementById('v-op').textContent = document.getElementById('sl-op').value + '%';
 }
 
 function redraw() {
-  const cfg = PRODUCTS[currentKey];
-  const opacity = document.getElementById('opacity-slider').value / 100;
-  const blend = document.getElementById('blend-slider').value / 100;
-  const warp = parseInt(document.getElementById('warp-slider').value);
-  const W = 500, H = 500;
+  const W = 460, H = 500;
+  const area = PRINT_AREAS[currentProduct][currentView];
+  const opacity = document.getElementById('sl-op').value / 100;
+  const size = document.getElementById('sl-size').value / 100;
+  const offsetX = parseInt(document.getElementById('sl-x').value);
+  const offsetY = parseInt(document.getElementById('sl-y').value);
+  const rotation = parseInt(document.getElementById('sl-rot').value) * Math.PI / 180;
 
-  drawProduct(ctx, currentKey, W, H);
+  mctx.clearRect(0, 0, W, H);
+  mctx.fillStyle = '#f0f0f0';
+  mctx.fillRect(0, 0, W, H);
 
-  const px = cfg.px * W;
-  const py = cfg.py * H;
-  const pw = cfg.pw * W;
-  const ph = cfg.ph * H;
-
-  // Draw design with warp
-  ctx.save();
-  ctx.globalAlpha = opacity;
-  if (designImg) {
-    const rows = 12;
-    const rh = ph / rows;
-    for (let r = 0; r < rows; r++) {
-      const warpOff = Math.sin(r * 0.75) * warp * 0.35;
-      ctx.drawImage(designImg,
-        0, (r/rows)*designImg.height, designImg.width, designImg.height/rows,
-        px + warpOff, py + r*rh, pw, rh + 0.5);
-    }
+  if (imgLoaded) {
+    mctx.drawImage(productImg, 0, 0, W, H);
   } else {
-    ctx.fillStyle = 'rgba(59,125,216,0.88)';
-    ctx.fillRect(px, py, pw, ph);
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 15px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('YOUR DESIGN', px+pw/2, py+ph/2-8);
-    ctx.font = '11px Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.65)';
-    ctx.fillText('Upload image on the left', px+pw/2, py+ph/2+12);
-  }
-  ctx.restore();
-
-  // Shadow blend through design
-  if (blend > 0) {
-    ctx.save();
-    ctx.globalAlpha = blend * 0.18;
-    for (let i = 0; i < 7; i++) {
-      const fy = py + (i/6)*ph;
-      ctx.fillStyle = 'rgba(0,0,0,1)';
-      ctx.fillRect(px, fy-1.5, pw, 3);
-    }
-    ctx.restore();
+    mctx.fillStyle = '#ddd';
+    mctx.fillRect(0, 0, W, H);
+    mctx.fillStyle = '#999';
+    mctx.font = '14px Segoe UI';
+    mctx.textAlign = 'center';
+    mctx.fillText('Loading...', W / 2, H / 2);
   }
 
-  // Red dashed print area border (like your reference image)
-  ctx.strokeStyle = 'rgba(210,40,40,0.85)';
-  ctx.lineWidth = 1.8;
-  ctx.setLineDash([6,4]);
-  ctx.strokeRect(px, py, pw, ph);
-  ctx.setLineDash([]);
+  const px = area.px * W;
+  const py = area.py * H;
+  const pw = area.pw * W;
+  const ph = area.ph * H;
+  const cx = px + pw / 2 + offsetX;
+  const cy = py + ph / 2 + offsetY;
 
-  // Update preview panel
-  pctx.clearRect(0,0,260,280);
-  pctx.drawImage(canvas, 0, 0, 500, 500, 0, 0, 260, 280);
+  if (designImg) {
+    const dw = pw * size;
+    const dh = ph * size;
+    mctx.save();
+    mctx.globalAlpha = opacity;
+    mctx.translate(cx, cy);
+    mctx.rotate(rotation);
+    mctx.drawImage(designImg, -dw / 2, -dh / 2, dw, dh);
+    mctx.restore();
+  }
+
+  pctx.clearRect(0, 0, 240, 280);
+  pctx.drawImage(mainCanvas, 0, 0, 460, 500, 0, 0, 240, 280);
 }
 
-function renderFinal() {
+function downloadRender() {
+  const W = 460, H = 500;
+  const area = PRINT_AREAS[currentProduct][currentView];
+  const opacity = document.getElementById('sl-op').value / 100;
+  const size = document.getElementById('sl-size').value / 100;
+  const offsetX = parseInt(document.getElementById('sl-x').value);
+  const offsetY = parseInt(document.getElementById('sl-y').value);
+  const rotation = parseInt(document.getElementById('sl-rot').value) * Math.PI / 180;
+
+  const rc = document.createElement('canvas');
+  rc.width = W; rc.height = H;
+  const rctx = rc.getContext('2d');
+
+  rctx.clearRect(0, 0, W, H);
+  if (imgLoaded) rctx.drawImage(productImg, 0, 0, W, H);
+
+  if (designImg) {
+    const px = area.px * W;
+    const py = area.py * H;
+    const pw = area.pw * W;
+    const ph = area.ph * H;
+    const cx = px + pw / 2 + offsetX;
+    const cy = py + ph / 2 + offsetY;
+    const dw = pw * size;
+    const dh = ph * size;
+
+    rctx.save();
+    rctx.globalAlpha = opacity;
+    rctx.translate(cx, cy);
+    rctx.rotate(rotation);
+    rctx.drawImage(designImg, -dw / 2, -dh / 2, dw, dh);
+    rctx.restore();
+  }
+
   const link = document.createElement('a');
-  link.download = 'customized-product.png';
-  link.href = canvas.toDataURL('image/png');
+  link.download = currentProduct + '-' + currentView + '-render.png';
+  link.href = rc.toDataURL('image/png');
   link.click();
 }
 
-redraw();
+loadProductImage();
+sync();
 </script>
 </body>
 </html>
